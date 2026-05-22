@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/qr-managment/static/css/main.10dcaa75.css",
+    "main.js": "/qr-managment/static/js/main.e191b916.js",
+    "index.html": "/qr-managment/index.html",
+    "main.10dcaa75.css.map": "/qr-managment/static/css/main.10dcaa75.css.map",
+    "main.e191b916.js.map": "/qr-managment/static/js/main.e191b916.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.10dcaa75.css",
+    "static/js/main.e191b916.js"
+  ]
+}
