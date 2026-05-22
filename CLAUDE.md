@@ -24,7 +24,7 @@ Create React App (React 18, React Router 6 HashRouter). No UI component librarie
 
 **Auth** (`src/context/AuthContext.js`): Firebase Auth state via `onAuthStateChanged`. `user === undefined` means still loading (shows spinner); `user === null` means unauthenticated.
 
-**Firebase** (`src/firebase.js`): Target project `qr-managment` — handles Auth and Firestore (`products` collection). A second Firebase app (`acepk-source`) is initialized lazily inside `snapshotImport.js` to read the source inventory; it is read-only with no authentication.
+**Firebase** (`src/firebase.js`): Target project — handles Auth and Firestore (`products` collection). A second Firebase app is initialized lazily inside `snapshotImport.js` to read the source inventory; it is read-only with no authentication. Both projects are configured via `REACT_APP_FIREBASE_*` and `REACT_APP_SOURCE_*` env vars.
 
 **Data model** — `products/{id}` in Firestore:
 - `id`, `name`, `code`, `tags` — from the source inventory snapshot

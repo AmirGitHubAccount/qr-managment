@@ -10,8 +10,8 @@ This app lets admins manage QR code stickers for products imported from an encry
 
 | Role | Project ID |
 |---|---|
-| Auth + product catalog | `qr-managment` |
-| Source inventory snapshot | `acepk-5d2fc` |
+| Auth + product catalog | target project (configured via env vars) |
+| Source inventory snapshot | source project (configured via env vars) |
 
 Products are imported from an encrypted SQLite snapshot stored in the source project, then managed (QR generation, printing) in the target project.
 
@@ -144,8 +144,8 @@ https://<username>.gitlab.io/qr-management
 ### Target project (`qr-managment`)
 Configured in `src/firebase.js`. Handles authentication and stores the product catalog in a `products` collection.
 
-### Source project (`acepk-5d2fc`)
-Configured inline in `src/utils/snapshotImport.js`. Used read-only during snapshot import. No authentication is performed against this project — ensure Firestore rules on `acepk-5d2fc` allow reads of the `Snapshots` collection, or adjust accordingly.
+### Source project
+Configured inline in `src/utils/snapshotImport.js` via `REACT_APP_SOURCE_*` env vars. Used read-only during snapshot import. No authentication is performed against this project — ensure its Firestore rules allow reads of the `Snapshots` collection, or adjust accordingly.
 
 ### Firestore rules (target project)
 
@@ -168,7 +168,7 @@ admin.auth().setCustomUserClaims(uid, { admin: true });
 The import pipeline (Settings page → "ייבא מוצרים") runs entirely in the browser. A decryption password is required — enter it in the password field before clicking import.
 
 ```
-Firestore (acepk-5d2fc)
+Firestore (source project)
   └─ Snapshots/main/chunks/chunk_0..N   ← Firestore Bytes, ~800 KB each
          │
          ▼
@@ -257,5 +257,5 @@ qr-management/
 
 - **Single-threaded decryption** — PBKDF2 runs on the main thread; the UI freezes for ~15s during import. A Web Worker would fix this but adds complexity.
 - **QR stored as base64** — each QR image is ~20 KB stored in Firestore. For large catalogs consider storing only `qrUrl` and regenerating on-demand.
-- **No auth against source project** — if `acepk-5d2fc` Firestore rules require authentication, import will fail with a permission error.
+- **No auth against source project** — if the source project's Firestore rules require authentication, import will fail with a permission error.
 - **Desktop only** — no mobile layout, by design.

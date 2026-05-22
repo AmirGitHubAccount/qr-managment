@@ -127,8 +127,7 @@ export default function Settings() {
         <div className="section-header">
           <h2 className="section-title">ייבוא מוצרים מהמערכת הקיימת</h2>
           <p className="section-desc">
-            מוריד ומעבד snapshot מפרויקט Firebase{' '}
-            <code>acepk-5d2fc</code> ומייבא את המוצרים לבסיס הנתונים הנוכחי.
+            מוריד ומעבד snapshot מפרויקט Firebase המקורי ומייבא את המוצרים לבסיס הנתונים הנוכחי.
           </p>
           <p className="section-desc section-warn">
             שים לב: תהליך הפענוח עשוי לקחת עד 30 שניות. אל תסגור את הדף.
@@ -139,7 +138,7 @@ export default function Settings() {
           <div className="import-info">
             <div className="info-row">
               <span className="info-label">מקור</span>
-              <span className="info-value mono">acepk-5d2fc → Snapshots/main</span>
+              <span className="info-value mono">Snapshots/main</span>
             </div>
             <div className="info-row">
               <span className="info-label">פורמט</span>
@@ -290,7 +289,7 @@ export default function Settings() {
             <div>
               <div className="req-title">גישה לפרויקט המקורי</div>
               <div className="req-desc">
-                ייבוא מתחבר לפרויקט <code>acepk-5d2fc</code> ללא אימות.
+                ייבוא מתחבר לפרויקט Firebase המקורי ללא אימות.
                 ודא שכללי האבטחה של Firestore מאפשרים קריאה מה-snapshot.
               </div>
             </div>
