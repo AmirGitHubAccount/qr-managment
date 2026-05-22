@@ -1,0 +1,253 @@
+.settings-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+.page-header { margin-bottom: 22px; }
+
+.page-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: -0.4px;
+}
+
+/* ── Section ── */
+.settings-section {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.section-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+
+.section-desc {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+.section-warn {
+  color: var(--amber);
+  margin-top: 4px;
+}
+
+.section-body { padding: 16px 18px; }
+
+/* ── Import box ── */
+.import-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-info {
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.info-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.info-label {
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  width: 50px;
+  flex-shrink: 0;
+}
+
+.info-value { color: var(--text-2); }
+
+code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--bg-3);
+  padding: 1px 5px;
+  border-radius: 2px;
+  color: var(--accent);
+}
+
+/* ── Progress ── */
+.progress-area {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 3px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.progress-status {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+/* ── Alerts ── */
+.alert-error {
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  color: var(--red);
+  font-size: 12px;
+}
+
+.alert-success {
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── Buttons ── */
+.btn-import {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  align-self: flex-start;
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  letter-spacing: 0.01em;
+}
+
+.btn-import:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-import:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-demo {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  padding: 8px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background 0.1s, border-color 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.btn-demo:hover:not(:disabled) { background: var(--accent-dim); border-color: var(--accent); }
+.btn-demo:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.spinner-sm {
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+}
+
+.btn-demo .spinner-sm {
+  border-color: rgba(232, 97, 44, 0.25);
+  border-top-color: var(--accent);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Demo chips ── */
+.demo-products-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.demo-chip {
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text-3);
+}
+
+/* ── Requirements ── */
+.requirements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.requirement-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.requirement-item:last-child { border-bottom: none; }
+
+.req-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  opacity: 0.7;
+}
+
+.req-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 3px;
+}
+
+.req-desc {
+  font-size: 12px;
+  color: var(--text-2);
+  line-height: 1.6;
+}

@@ -1,0 +1,237 @@
+.product-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 28px;
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 60vh;
+  color: var(--text-2);
+}
+
+.product-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.btn-back {
+  color: var(--text-3);
+  font-size: 12px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.1s;
+  flex-shrink: 0;
+}
+
+.btn-back:hover { color: var(--text-1); }
+
+.product-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+  letter-spacing: -0.4px;
+  font-family: var(--mono);
+}
+
+.alert-error {
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  color: var(--red);
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+
+/* ── Layout ── */
+.product-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 680px) {
+  .product-layout { grid-template-columns: 1fr; }
+}
+
+/* ── Cards ── */
+.product-details-card,
+.product-qr-card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.card-title {
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+
+.detail-list {
+  padding: 4px 0;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-row:last-child { border-bottom: none; }
+
+.detail-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-value {
+  font-size: 13px;
+  color: var(--text-1);
+  word-break: break-all;
+}
+
+.detail-value.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.detail-value.text-muted { color: var(--text-2); font-size: 12px; }
+.detail-value.qr-url-text { font-size: 10.5px; color: var(--text-3); direction: ltr; word-break: break-all; }
+
+/* ── QR card ── */
+.qr-section {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.qr-image-wrapper {
+  background: white;
+  padding: 10px;
+  border-radius: var(--radius);
+  line-height: 0;
+}
+
+.qr-image {
+  width: 180px;
+  height: 180px;
+  display: block;
+}
+
+.qr-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.qr-empty {
+  padding: 36px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.qr-empty-icon {
+  width: 48px;
+  height: 48px;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-size: 20px;
+}
+
+.qr-empty-text {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 7px 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: background 0.1s;
+  flex: 1;
+}
+
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 7px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: border-color 0.1s, color 0.1s;
+  flex: 1;
+}
+
+.btn-secondary:hover:not(:disabled) { border-color: var(--text-2); color: var(--text-1); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-generate {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.btn-generate:hover:not(:disabled) { background: var(--accent-hover); }
+.btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.spinner-sm {
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
