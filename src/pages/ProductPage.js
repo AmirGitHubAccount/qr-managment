@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { generateQrDataUrl } from '../utils/qrUtils';
+import { generateQrDataUrl, getQrUrl } from '../utils/qrUtils';
 import PrintStickers from '../components/PrintStickers';
 import './ProductPage.css';
+
+const VALID_ID = /^[a-zA-Z0-9\-_.]+$/;
 
 export default function ProductPage() {
   const { id } = useParams();
@@ -17,6 +19,12 @@ export default function ProductPage() {
   const [showPrint, setShowPrint] = useState(false);
 
   useEffect(() => {
+    if (!productId || !VALID_ID.test(productId)) {
+      setError('מזהה מוצר לא תקין');
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
     async function load() {
       try {
@@ -29,7 +37,8 @@ export default function ProductPage() {
           }
         }
       } catch (err) {
-        if (!cancelled) setError(`שגיאה: ${err.message}`);
+        console.error('ProductPage load error:', err);
+        if (!cancelled) setError('שגיאה בטעינת המוצר. נסה שוב מאוחר יותר.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -45,12 +54,13 @@ export default function ProductPage() {
       const qrCode = await generateQrDataUrl(productId);
       await updateDoc(doc(db, 'products', productId), {
         qrCode,
-        qrUrl: `https://psrar.github.io/tal_web_app/#/home/items/${encodeURIComponent(productId)}`,
+        qrUrl: getQrUrl(productId),
         qrGeneratedAt: new Date().toISOString(),
       });
       setProduct((prev) => ({ ...prev, qrCode }));
     } catch (err) {
-      setError(`שגיאה ביצירת QR: ${err.message}`);
+      console.error('QR generation error:', err);
+      setError('שגיאה ביצירת QR. נסה שוב.');
     } finally {
       setGenerating(false);
     }

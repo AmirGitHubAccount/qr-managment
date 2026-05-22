@@ -13,30 +13,29 @@ const SOURCE_CONFIG = {
 };
 
 const SOURCE_APP_NAME = 'acepk-source';
-const PASSWORD = process.env.REACT_APP_SNAPSHOT_PASSWORD;
+const BATCH_SIZE = 400;
+const BATCH_DELAY_MS = 100;
 
 function getSourceApp() {
   const existing = getApps().find((a) => a.name === SOURCE_APP_NAME);
   return existing || initializeApp(SOURCE_CONFIG, SOURCE_APP_NAME);
 }
 
-// Decrypt TAL format: [TAL(3)][v1(1)][salt(16)][nonce(12)][ciphertext][mac(16)]
+// Decrypt encrypted binary format: [magic(3)][v1(1)][salt(16)][nonce(12)][ciphertext][mac(16)]
 // Key derivation: PBKDF2-HMAC-SHA256, 600 000 iterations, 256-bit key
-async function decryptTAL(data, password) {
-  if (data.length < 20) throw new Error('Data too short to be a valid TAL file');
+async function decryptSnapshot(data, password) {
+  if (data.length < 20) throw new Error('Data too short to be a valid snapshot file');
 
   if (data[0] !== 0x54 || data[1] !== 0x41 || data[2] !== 0x4C) {
-    throw new Error('Invalid TAL header — expected bytes 54 41 4C ("TAL")');
+    throw new Error('Invalid snapshot header — unexpected magic bytes');
   }
   if (data[3] !== 1) {
-    throw new Error(`Unsupported TAL version: ${data[3]}`);
+    throw new Error(`Unsupported snapshot version: ${data[3]}`);
   }
 
-  const salt = data.slice(4, 20); // 16 bytes
-  // encryptedPart = nonce(12) + ciphertext(N) + mac(16)
+  const salt = data.slice(4, 20);
   const encryptedPart = data.slice(20);
   const iv = encryptedPart.slice(0, 12);
-  // Web Crypto AES-GCM expects ciphertext with the 16-byte GCM tag appended
   const ciphertextWithTag = encryptedPart.slice(12);
 
   const keyMaterial = await crypto.subtle.importKey(
@@ -69,7 +68,6 @@ async function decryptTAL(data, password) {
   return new Uint8Array(decrypted);
 }
 
-// Handles both Firebase Bytes objects and plain Uint8Arrays
 function toUint8Array(value) {
   if (!value) return null;
   if (value instanceof Uint8Array) return value;
@@ -77,6 +75,20 @@ function toUint8Array(value) {
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
   if (Array.isArray(value)) return new Uint8Array(value);
   return null;
+}
+
+function validateSqlResult(result) {
+  if (!result || result.length === 0 || !Array.isArray(result[0].values)) {
+    throw new Error('Unexpected SQL result format');
+  }
+  return result[0].values;
+}
+
+async function commitBatch(batch, isLast) {
+  await batch.commit();
+  if (!isLast) {
+    await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+  }
 }
 
 export async function importFromLocalSqlite(targetDb, onProgress) {
@@ -112,7 +124,7 @@ export async function importFromLocalSqlite(targetDb, onProgress) {
     const result = sqlDb.exec(
       "SELECT p.id, p.kit, o.name FROM Pack p LEFT JOIN Owner o ON p.owner = o.id WHERE p.id != ''"
     );
-    rows = result.length > 0 ? result[0].values : [];
+    rows = validateSqlResult(result);
   } catch (err) {
     sqlDb.close();
     throw new Error(`שגיאה בשאילתת SQLite: ${err.message}`);
@@ -126,14 +138,15 @@ export async function importFromLocalSqlite(targetDb, onProgress) {
 
   onProgress(`נמצאו ${rows.length} מוצרים. שומר...`, 65);
 
-  const BATCH_SIZE = 400;
   let saved = 0;
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = writeBatch(targetDb);
     const chunk = rows.slice(i, i + BATCH_SIZE);
 
-    for (const [id, kit, ownerName] of chunk) {
+    for (const row of chunk) {
+      if (!Array.isArray(row) || row.length < 3) continue;
+      const [id, kit, ownerName] = row;
       if (!id) continue;
       const productRef = doc(targetDb, 'products', String(id));
       batch.set(
@@ -149,7 +162,7 @@ export async function importFromLocalSqlite(targetDb, onProgress) {
       );
     }
 
-    await batch.commit();
+    await commitBatch(batch, i + BATCH_SIZE >= rows.length);
     saved += chunk.length;
     onProgress(
       `שמר ${saved} / ${rows.length} מוצרים...`,
@@ -160,7 +173,11 @@ export async function importFromLocalSqlite(targetDb, onProgress) {
   return rows.length;
 }
 
-export async function importFromSnapshot(targetDb, onProgress) {
+export async function importFromSnapshot(targetDb, password, onProgress) {
+  if (!password) {
+    throw new Error('נדרשת סיסמה לפענוח ה-snapshot');
+  }
+
   const sourceApp = getSourceApp();
   const sourceFirestore = getFirestore(sourceApp);
 
@@ -171,14 +188,22 @@ export async function importFromSnapshot(targetDb, onProgress) {
   try {
     snapshotDoc = await getDoc(snapshotDocRef);
   } catch (err) {
-    throw new Error(`שגיאה בגישה לבסיס הנתונים המקורי: ${err.message}`);
+    if (err.code === 'permission-denied') {
+      throw new Error('גישה נדחתה לבסיס הנתונים המקורי. ודא שכללי האבטחה של Firestore מאפשרים קריאה.');
+    }
+    throw new Error('שגיאה בגישה לבסיס הנתונים המקורי. בדוק חיבור לרשת ונסה שוב.');
   }
 
   if (!snapshotDoc.exists()) {
     throw new Error('ה-snapshot "main" לא נמצא בפרויקט המקורי');
   }
 
-  const { chunksCount } = snapshotDoc.data();
+  const data = snapshotDoc.data();
+  if (!data || typeof data.chunksCount !== 'number') {
+    throw new Error('מטא-דאטה של ה-snapshot חסרה או לא תקינה');
+  }
+  const { chunksCount } = data;
+
   onProgress(`נמצאו ${chunksCount} חלקים. מוריד...`, 10);
 
   const chunksRef = collection(sourceFirestore, 'Snapshots', 'main', 'chunks');
@@ -209,7 +234,7 @@ export async function importFromSnapshot(targetDb, onProgress) {
 
   let compressed;
   try {
-    compressed = await decryptTAL(assembled, PASSWORD);
+    compressed = await decryptSnapshot(assembled, password);
   } catch (err) {
     throw new Error(`שגיאת פענוח: ${err.message}`);
   }
@@ -243,7 +268,7 @@ export async function importFromSnapshot(targetDb, onProgress) {
   let rows;
   try {
     const result = sqlDb.exec('SELECT id, code, tags FROM CommonItem');
-    rows = result.length > 0 ? result[0].values : [];
+    rows = validateSqlResult(result);
   } catch (err) {
     sqlDb.close();
     throw new Error(`שגיאה בשאילתת SQLite: ${err.message}`);
@@ -257,14 +282,15 @@ export async function importFromSnapshot(targetDb, onProgress) {
 
   onProgress(`נמצאו ${rows.length} מוצרים. שומר...`, 86);
 
-  const BATCH_SIZE = 400;
   let saved = 0;
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = writeBatch(targetDb);
     const chunk = rows.slice(i, i + BATCH_SIZE);
 
-    for (const [id, code, tags] of chunk) {
+    for (const row of chunk) {
+      if (!Array.isArray(row) || row.length < 3) continue;
+      const [id, code, tags] = row;
       if (!id) continue;
       const productRef = doc(targetDb, 'products', String(id));
       batch.set(
@@ -280,7 +306,7 @@ export async function importFromSnapshot(targetDb, onProgress) {
       );
     }
 
-    await batch.commit();
+    await commitBatch(batch, i + BATCH_SIZE >= rows.length);
     saved += chunk.length;
     onProgress(
       `שמר ${saved} / ${rows.length} מוצרים...`,

@@ -27,7 +27,8 @@ export default function ProductList() {
         setLoading(false);
       },
       (err) => {
-        setError(`שגיאה בטעינת מוצרים: ${err.message}`);
+        console.error('ProductList load error:', err);
+        setError('שגיאה בטעינת מוצרים. נסה שוב מאוחר יותר.');
         setLoading(false);
       }
     );
@@ -106,6 +107,7 @@ export default function ProductList() {
             placeholder="חיפוש לפי שם, מזהה, ברקוד..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="חיפוש מוצרים"
           />
 
           <div className="filter-tabs">
@@ -152,7 +154,7 @@ export default function ProductList() {
                       type="checkbox"
                       checked={selected.size === filtered.length && filtered.length > 0}
                       onChange={toggleSelectAll}
-                      title="בחר הכל"
+                      aria-label="בחר הכל"
                     />
                   </th>
                   <th>שם / מזהה</th>
@@ -174,6 +176,7 @@ export default function ProductList() {
                         type="checkbox"
                         checked={selected.has(product.id)}
                         onChange={() => toggleSelect(product.id)}
+                        aria-label={`בחר ${product.name || product.id}`}
                       />
                     </td>
                     <td className="col-name">

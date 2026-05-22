@@ -35,6 +35,7 @@ async function loadDemoData() {
 }
 
 export default function Settings() {
+  const [password, setPassword] = useState('');
   const [status, setStatus] = useState('');
   const [progress, setProgress] = useState(0);
   const [running, setRunning] = useState(false);
@@ -47,7 +48,13 @@ export default function Settings() {
   const [localResult, setLocalResult] = useState(null);
   const [localError, setLocalError] = useState('');
 
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoResult, setDemoResult] = useState(null);
+  const [demoError, setDemoError] = useState('');
+
   const handleLocalImport = async () => {
+    if (!window.confirm('פעולה זו תחליף את כל המוצרים הקיימים בבסיס הנתונים. האם להמשיך?')) return;
+
     setLocalRunning(true);
     setLocalError('');
     setLocalResult(null);
@@ -67,11 +74,9 @@ export default function Settings() {
     }
   };
 
-  const [demoLoading, setDemoLoading] = useState(false);
-  const [demoResult, setDemoResult] = useState(null);
-  const [demoError, setDemoError] = useState('');
-
   const handleLoadDemo = async () => {
+    if (!window.confirm('פעולה זו תוסיף / תחליף מוצרי דמו בבסיס הנתונים. האם להמשיך?')) return;
+
     setDemoLoading(true);
     setDemoError('');
     setDemoResult(null);
@@ -86,6 +91,12 @@ export default function Settings() {
   };
 
   const handleImport = async () => {
+    if (!password.trim()) {
+      setError('נדרשת סיסמת פענוח לפני הייבוא');
+      return;
+    }
+    if (!window.confirm('פעולה זו תחליף את כל המוצרים הקיימים בבסיס הנתונים. האם להמשיך?')) return;
+
     setRunning(true);
     setError('');
     setResult(null);
@@ -93,11 +104,12 @@ export default function Settings() {
     setProgress(0);
 
     try {
-      const count = await importFromSnapshot(db, (msg, pct) => {
+      const count = await importFromSnapshot(db, password.trim(), (msg, pct) => {
         setStatus(msg);
         setProgress(Math.round(pct));
       });
       setResult(`ייבוא הושלם! יובאו ${count} מוצרים.`);
+      setPassword('');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -131,11 +143,24 @@ export default function Settings() {
             </div>
             <div className="info-row">
               <span className="info-label">פורמט</span>
-              <span className="info-value">TAL v1 · AES-256-GCM · PBKDF2-SHA256 · GZip · SQLite</span>
+              <span className="info-value">Encrypted snapshot v1 · AES-256-GCM · PBKDF2-SHA256 · GZip · SQLite</span>
             </div>
             <div className="info-row">
               <span className="info-label">טבלה</span>
               <span className="info-value mono">CommonItem (id, code, tags)</span>
+            </div>
+            <div className="info-row">
+              <label htmlFor="snapshot-password" className="info-label">סיסמה</label>
+              <input
+                id="snapshot-password"
+                type="password"
+                className="import-password-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="סיסמת פענוח"
+                disabled={running}
+                autoComplete="off"
+              />
             </div>
           </div>
 

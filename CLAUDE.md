@@ -27,16 +27,16 @@ Create React App (React 18, React Router 6 HashRouter). No UI component librarie
 **Firebase** (`src/firebase.js`): Target project `qr-managment` — handles Auth and Firestore (`products` collection). A second Firebase app (`acepk-source`) is initialized lazily inside `snapshotImport.js` to read the source inventory; it is read-only with no authentication.
 
 **Data model** — `products/{id}` in Firestore:
-- `id`, `name`, `code`, `tags` — from the Tal SQLite snapshot
+- `id`, `name`, `code`, `tags` — from the source inventory snapshot
 - `qrCode` — base64 PNG data URL (stored in Firestore, ~20 KB each)
 - `qrUrl`, `qrGeneratedAt`, `importedAt` — metadata
 
-**QR utilities** (`src/utils/qrUtils.js`): generates QR codes pointing to `https://psrar.github.io/tal_web_app/#/home/items/{productId}`. Two sizes: 300px (full) and 160px (small preview).
+**QR utilities** (`src/utils/qrUtils.js`): generates QR codes using the base URL from `REACT_APP_QR_BASE_URL` (falls back to the default configured URL). One size: 300px.
 
-**Snapshot import pipeline** (`src/utils/snapshotImport.js`): runs entirely in the browser.
+**Snapshot import pipeline** (`src/utils/snapshotImport.js`): runs entirely in the browser. Password is entered by the admin at import time — not stored anywhere in the code.
 1. Fetch chunked binary blobs from Firestore (`Snapshots/main/chunks/chunk_0..N`)
 2. Reassemble into a single `Uint8Array`
-3. Decrypt: TAL v1 format — `TAL` magic + version byte + 16-byte salt + 12-byte AES-GCM nonce + ciphertext+tag. PBKDF2-HMAC-SHA256 (600k iterations, password: `"pakar"`)
+3. Decrypt: encrypted binary format v1 — magic header (3 B) + version (1 B) + salt (16 B) + AES-GCM nonce (12 B) + ciphertext+tag. PBKDF2-HMAC-SHA256, 600k iterations
 4. GZip decompress with `pako.ungzip`
 5. Parse SQLite with `sql.js` (WASM) — `SELECT id, code, tags FROM CommonItem`
 6. Batch-write to Firestore in chunks of 400 (`writeBatch`)

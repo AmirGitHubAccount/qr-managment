@@ -6,14 +6,14 @@ A desktop admin tool for generating and printing QR-code stickers for inventory 
 
 ## Overview
 
-This app lets admins manage QR code stickers for products tracked in the *Tal* inventory system. It connects to two Firebase projects:
+This app lets admins manage QR code stickers for products imported from an encrypted inventory snapshot. It connects to two Firebase projects:
 
 | Role | Project ID |
 |---|---|
 | Auth + product catalog | `qr-managment` |
 | Source inventory snapshot | `acepk-5d2fc` |
 
-Products are imported from an encrypted SQLite snapshot stored in the source project, then managed (QR generation, printing) in the new project.
+Products are imported from an encrypted SQLite snapshot stored in the source project, then managed (QR generation, printing) in the target project.
 
 ---
 
@@ -23,7 +23,8 @@ Products are imported from an encrypted SQLite snapshot stored in the source pro
 - **Product list** — searchable, filterable table with QR status indicators
 - **Multi-select print** — select any products → print A4 sheet of stickers
 - **Product page** — generate and save QR codes, print single sticker
-- **Snapshot import** — one-click import from the existing Tal system (decrypts, decompresses, parses SQLite, batch-writes to Firestore)
+- **Snapshot import** — one-click import from the source system (decrypts, decompresses, parses SQLite, batch-writes to Firestore)
+- **Local SQLite import** — import from a bundled `items.sqlite` file (no internet required)
 - **Demo data** — load 10 fake products for testing without touching the real snapshot
 
 ---
@@ -54,10 +55,17 @@ No UI component libraries — plain CSS only.
 
 ## Setup
 
-### 1. Install dependencies
+### 1. Configure environment variables
+
+Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
-cd qr-management
+cp .env.example .env
+```
+
+### 2. Install dependencies
+
+```bash
 npm install
 ```
 
@@ -73,7 +81,7 @@ If it's missing, copy it manually:
 cp node_modules/sql.js/dist/sql-wasm.wasm public/
 ```
 
-### 2. Run locally
+### 3. Run locally
 
 ```bash
 npm start
@@ -81,7 +89,7 @@ npm start
 
 Opens at `http://localhost:3000`. Log in with a Firebase Auth user you created in the console.
 
-### 3. Build for production
+### 4. Build for production
 
 ```bash
 npm run build
@@ -95,10 +103,11 @@ Output is in `build/`.
 
 The repo includes `.gitlab-ci.yml`. Push to `main` and GitLab CI will:
 
-1. Install dependencies
-2. Build the app
-3. Copy `build/` → `public/` (the directory GitLab Pages serves)
-4. Copy `index.html` → `404.html` (handles client-side routing on page refresh)
+1. Inject environment variables from GitLab CI/CD Variables
+2. Install dependencies
+3. Build the app
+4. Copy `build/` → `public/` (the directory GitLab Pages serves)
+5. Copy `index.html` → `404.html` (handles client-side routing on page refresh)
 
 The app will be available at:
 
@@ -111,6 +120,23 @@ https://<username>.gitlab.io/qr-management
 > "homepage": "https://username.gitlab.io/qr-management"
 > ```
 
+**Required CI/CD Variables** (Settings → CI/CD → Variables):
+
+| Variable | Description |
+|---|---|
+| `REACT_APP_FIREBASE_API_KEY` | Target Firebase project API key |
+| `REACT_APP_FIREBASE_AUTH_DOMAIN` | Target Firebase auth domain |
+| `REACT_APP_FIREBASE_PROJECT_ID` | Target Firebase project ID |
+| `REACT_APP_FIREBASE_STORAGE_BUCKET` | Target Firebase storage bucket |
+| `REACT_APP_FIREBASE_MESSAGING_SENDER_ID` | Target Firebase messaging sender ID |
+| `REACT_APP_FIREBASE_APP_ID` | Target Firebase app ID |
+| `REACT_APP_SOURCE_API_KEY` | Source Firebase project API key |
+| `REACT_APP_SOURCE_AUTH_DOMAIN` | Source Firebase auth domain |
+| `REACT_APP_SOURCE_PROJECT_ID` | Source Firebase project ID |
+| `REACT_APP_SOURCE_STORAGE_BUCKET` | Source Firebase storage bucket |
+| `REACT_APP_SOURCE_MESSAGING_SENDER_ID` | Source Firebase messaging sender ID |
+| `REACT_APP_SOURCE_APP_ID` | Source Firebase app ID |
+
 ---
 
 ## Firebase Configuration
@@ -119,28 +145,27 @@ https://<username>.gitlab.io/qr-management
 Configured in `src/firebase.js`. Handles authentication and stores the product catalog in a `products` collection.
 
 ### Source project (`acepk-5d2fc`)
-Configured inline in `src/utils/snapshotImport.js`. Used read-only during snapshot import. No authentication is performed against this project — ensure Firestore rules on `acepk-5d2fc` allow unauthenticated reads of the `Snapshots` collection, or adjust accordingly.
+Configured inline in `src/utils/snapshotImport.js`. Used read-only during snapshot import. No authentication is performed against this project — ensure Firestore rules on `acepk-5d2fc` allow reads of the `Snapshots` collection, or adjust accordingly.
 
 ### Firestore rules (target project)
 
-Minimal rules to get started — tighten before production:
+The `firestore.rules` file in the repo root restricts writes to users with the `admin` custom claim. Deploy with:
 
+```bash
+firebase deploy --only firestore:rules
 ```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /products/{id} {
-      allow read, write: if request.auth != null;
-    }
-  }
-}
+
+To set admin claims on a user, use the Firebase Admin SDK or a Cloud Function:
+
+```js
+admin.auth().setCustomUserClaims(uid, { admin: true });
 ```
 
 ---
 
 ## Snapshot Import
 
-The import pipeline (Settings page → "ייבא מוצרים") runs entirely in the browser:
+The import pipeline (Settings page → "ייבא מוצרים") runs entirely in the browser. A decryption password is required — enter it in the password field before clicking import.
 
 ```
 Firestore (acepk-5d2fc)
@@ -150,11 +175,11 @@ Firestore (acepk-5d2fc)
   Reassemble byte array
          │
          ▼
-  Decrypt  ──  TAL v1 format
-               [TAL magic (3 B)] [version (1 B)] [salt (16 B)]
-               [AES-GCM nonce (12 B)] [ciphertext] [GCM tag (16 B)]
+  Decrypt  ──  Encrypted binary format v1
+               Magic header (3 B) + version (1 B) + salt (16 B)
+               + AES-GCM nonce (12 B) + ciphertext + GCM tag (16 B)
                Key derivation: PBKDF2-HMAC-SHA256, 600 000 iterations
-               Password: "pakar"
+               Password: entered by admin at import time
          │
          ▼
   GZip decompress  (pako.ungzip)
@@ -175,13 +200,9 @@ Firestore (acepk-5d2fc)
 
 ## QR Code Format
 
-Each QR code encodes the following URL:
+Each QR code encodes a URL pointing to the item's detail page in the mobile inventory app. The base URL is configurable via the `REACT_APP_QR_BASE_URL` environment variable (see `.env.example`).
 
-```
-https://psrar.github.io/tal_web_app/#/home/items/{productId}
-```
-
-This links directly to the item's detail page in the Tal web app.
+> **Warning:** Changing `REACT_APP_QR_BASE_URL` after stickers have been printed in the field will make existing QR codes point to a dead link.
 
 ---
 
@@ -192,7 +213,7 @@ This links directly to the item's detail page in the Tal web app.
 | Field | Type | Description |
 |---|---|---|
 | `id` | string | Product identifier (= document ID) |
-| `name` | string | Display name (same as `id` in the Tal schema) |
+| `name` | string | Display name |
 | `code` | string | Barcode / scan code |
 | `tags` | string | Comma-separated tags |
 | `qrCode` | string \| null | Base64 PNG data URL of the generated QR image |
@@ -224,6 +245,8 @@ qr-management/
 │   └── utils/
 │       ├── qrUtils.js        # QR code generation helpers
 │       └── snapshotImport.js # Full import pipeline
+├── firestore.rules
+├── firebase.json
 ├── .gitlab-ci.yml
 └── package.json
 ```

@@ -2,22 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { generateQrDataUrl } from '../utils/qrUtils';
 import './PrintStickers.css';
 
+const SAFE_DATA_URL = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
+
 export default function PrintStickers({ products, onClose }) {
   const [stickers, setStickers] = useState([]);
   const [preparing, setPreparing] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     async function prepare() {
-      const result = await Promise.all(
-        products.map(async (p) => {
-          const qr = p.qrCode || (await generateQrDataUrl(p.id));
-          return { ...p, qrCode: qr };
-        })
-      );
-      if (!cancelled) {
-        setStickers(result);
-        setPreparing(false);
+      try {
+        const result = await Promise.all(
+          products.map(async (p) => {
+            const qr = p.qrCode || (await generateQrDataUrl(p.id));
+            return { ...p, qrCode: qr };
+          })
+        );
+        if (!cancelled) {
+          setStickers(result);
+          setPreparing(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('שגיאה ביצירת מדבקות. נסה שוב.');
+          setPreparing(false);
+        }
       }
     }
     prepare();
@@ -31,13 +41,16 @@ export default function PrintStickers({ products, onClose }) {
       return;
     }
 
-    const stickerHtml = stickers.map((p) => `
+    const stickerHtml = stickers.map((p) => {
+      const safeQr = p.qrCode && SAFE_DATA_URL.test(p.qrCode) ? p.qrCode : null;
+      return `
       <div class="sticker">
-        ${p.qrCode ? `<img src="${p.qrCode}" class="sticker-qr" alt="QR" />` : ''}
+        ${safeQr ? `<img src="${safeQr}" class="sticker-qr" alt="QR" />` : ''}
         <div class="sticker-id">${escapeHtml(p.id)}</div>
         ${p.code ? `<div class="sticker-code">${escapeHtml(p.code)}</div>` : ''}
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     win.document.write(`<!DOCTYPE html>
 <html lang="he" dir="rtl">
@@ -102,7 +115,13 @@ export default function PrintStickers({ products, onClose }) {
   };
 
   return (
-    <div className="print-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className="print-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="הדפסת מדבקות"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
       <div className="print-dialog">
         <div className="print-dialog-header">
           <h2>הדפסת מדבקות</h2>
@@ -114,6 +133,8 @@ export default function PrintStickers({ products, onClose }) {
             <div className="spinner" />
             <span>מכין מדבקות...</span>
           </div>
+        ) : error ? (
+          <div className="alert-error">{error}</div>
         ) : (
           <div className="print-preview-scroll">
             <div className="print-preview-grid">
@@ -131,7 +152,7 @@ export default function PrintStickers({ products, onClose }) {
           <button
             className="btn-print-confirm"
             onClick={handlePrint}
-            disabled={preparing}
+            disabled={preparing || !!error}
           >
             הדפס
           </button>
