@@ -1,0 +1,41 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          REACT_APP_FIREBASE_API_KEY: ${{ secrets.REACT_APP_FIREBASE_API_KEY }}
+          REACT_APP_FIREBASE_AUTH_DOMAIN: ${{ vars.REACT_APP_FIREBASE_AUTH_DOMAIN }}
+          REACT_APP_FIREBASE_PROJECT_ID: ${{ vars.REACT_APP_FIREBASE_PROJECT_ID }}
+          REACT_APP_FIREBASE_STORAGE_BUCKET: ${{ vars.REACT_APP_FIREBASE_STORAGE_BUCKET }}
+          REACT_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_FIREBASE_MESSAGING_SENDER_ID }}
+          REACT_APP_FIREBASE_APP_ID: ${{ secrets.REACT_APP_FIREBASE_APP_ID }}
+          REACT_APP_SOURCE_API_KEY: ${{ secrets.REACT_APP_SOURCE_API_KEY }}
+          REACT_APP_SOURCE_AUTH_DOMAIN: ${{ vars.REACT_APP_SOURCE_AUTH_DOMAIN }}
+          REACT_APP_SOURCE_PROJECT_ID: ${{ vars.REACT_APP_SOURCE_PROJECT_ID }}
+          REACT_APP_SOURCE_STORAGE_BUCKET: ${{ vars.REACT_APP_SOURCE_STORAGE_BUCKET }}
+          REACT_APP_SOURCE_MESSAGING_SENDER_ID: ${{ secrets.REACT_APP_SOURCE_MESSAGING_SENDER_ID }}
+          REACT_APP_SOURCE_APP_ID: ${{ secrets.REACT_APP_SOURCE_APP_ID }}
+          REACT_APP_SNAPSHOT_PASSWORD: ${{ secrets.REACT_APP_SNAPSHOT_PASSWORD }}
+
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build

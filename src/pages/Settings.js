@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db } from '../firebase';
-import { importFromSnapshot } from '../utils/snapshotImport';
+import { importFromSnapshot, importFromLocalSqlite } from '../utils/snapshotImport';
 import { writeBatch, doc } from 'firebase/firestore';
 import './Settings.css';
 
@@ -40,6 +40,32 @@ export default function Settings() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  const [localRunning, setLocalRunning] = useState(false);
+  const [localStatus, setLocalStatus] = useState('');
+  const [localProgress, setLocalProgress] = useState(0);
+  const [localResult, setLocalResult] = useState(null);
+  const [localError, setLocalError] = useState('');
+
+  const handleLocalImport = async () => {
+    setLocalRunning(true);
+    setLocalError('');
+    setLocalResult(null);
+    setLocalStatus('');
+    setLocalProgress(0);
+
+    try {
+      const count = await importFromLocalSqlite(db, (msg, pct) => {
+        setLocalStatus(msg);
+        setLocalProgress(Math.round(pct));
+      });
+      setLocalResult(`ייבוא הושלם! יובאו ${count} מוצרים.`);
+    } catch (err) {
+      setLocalError(err.message);
+    } finally {
+      setLocalRunning(false);
+    }
+  };
 
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoResult, setDemoResult] = useState(null);
@@ -139,6 +165,57 @@ export default function Settings() {
 
           <button className="btn-import" onClick={handleImport} disabled={running}>
             {running ? <><span className="spinner-sm" /> מייבא...</> : 'ייבא מוצרים'}
+          </button>
+        </div></div>
+      </section>
+
+      <section className="settings-section">
+        <div className="section-header">
+          <h2 className="section-title">ייבוא מקובץ SQLite מקומי</h2>
+          <p className="section-desc">
+            מייבא מוצרים מקובץ <code>items.sqlite</code> המצורף לאפליקציה.
+            לא נדרש חיבור לאינטרנט.
+          </p>
+        </div>
+
+        <div className="section-body"><div className="import-box">
+          <div className="import-info">
+            <div className="info-row">
+              <span className="info-label">מקור</span>
+              <span className="info-value mono">items.sqlite (מובנה באפליקציה)</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">טבלה</span>
+              <span className="info-value mono">CommonItem (id, code, tags)</span>
+            </div>
+          </div>
+
+          {(localRunning || localStatus) && (
+            <div className="progress-area">
+              <div className="progress-bar-track">
+                <div
+                  className="progress-bar-fill"
+                  style={{ width: `${localProgress}%` }}
+                />
+              </div>
+              <div className="progress-status">{localStatus}</div>
+            </div>
+          )}
+
+          {localError && (
+            <div className="alert-error">
+              <strong>שגיאה:</strong> {localError}
+            </div>
+          )}
+
+          {localResult && (
+            <div className="alert-success">
+              {localResult}
+            </div>
+          )}
+
+          <button className="btn-import" onClick={handleLocalImport} disabled={localRunning}>
+            {localRunning ? <><span className="spinner-sm" /> מייבא...</> : 'ייבא מקובץ מקומי'}
           </button>
         </div></div>
       </section>

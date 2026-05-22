@@ -20,7 +20,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "postinstall": "node -e \"try{require('fs').copyFileSync('node_modules/sql.js/dist/sql-wasm.wasm','public/sql-wasm.wasm');console.log('sql-wasm.wasm copied')}catch(e){console.warn('Could not copy sql-wasm.wasm:',e.message)}\""
+    "postinstall": "node -e \"const fs=require('fs');['sql-wasm.wasm','sql-wasm-browser.wasm'].forEach(f=>{try{fs.copyFileSync('node_modules/sql.js/dist/'+f,'public/'+f);console.log(f+' copied')}catch(e){console.warn('Could not copy '+f+':',e.message)}})\""
   },
   "eslintConfig": {
     "extends": [
